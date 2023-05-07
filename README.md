@@ -16,6 +16,7 @@ Zodkit is a collection of [Zod](https://github.com/colinhacks/zod) utilities for
 - [Types](#types)
   - [`Schema`](#schema)
   - [`RouteParams`](#routeparams)
+  - [`SafeParseFailure`](#safeparsefailure)
 
 ## Installing
 
@@ -81,7 +82,7 @@ export const GET = ((event) => {
 
 `parseSearchParamsSafe(data: URLSearchParams | RequestEvent, schema: ` [`Schema`](#schema)`)`
 
-Parses and validates `URLSearchParams` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails an object in the shape `{ success: false; error: ZodError; }` will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
+Parses and validates `URLSearchParams` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails a [`SafeParseFailure`](#safeparsefailure) object will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
 
 ```typescript
 import { fail } from '@sveltejs/kit';
@@ -123,7 +124,7 @@ export const POST = (async (event) => {
 
 `async parseFormDataSafe(data: FormData | RequestEvent, schema: ` [`Schema`](#schema)`)`
 
-Parses and validates `FormData` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails an object in the shape `{ success: false; error: ZodError; }` will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
+Parses and validates `FormData` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails a [`SafeParseFailure`](#safeparsefailure) object will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
 
 ```typescript
 import { fail } from '@sveltejs/kit';
@@ -165,7 +166,7 @@ export const GET = ((event) => {
 
 `parseRouteParamsSafe(data: `[`RouteParams `](#routeparams)`| RequestEvent, schema: ` [`Schema`](#schema)`)`
 
-Parses and validates [`RouteParams`](#routeparams) from `event.params` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails an object in the shape `{ success: false; error: ZodError; }` will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
+Parses and validates [`RouteParams`](#routeparams) from `event.params` using [`.safeParse`](https://github.com/colinhacks/zod#safeparse). If the parsing/validation fails a [`SafeParseFailure`](#safeparsefailure) object will be returned, otherwise an object in the shape `{ success: true; data: T; }` will be returned
 
 ```typescript
 import { fail } from '@sveltejs/kit';
@@ -205,3 +206,35 @@ const schema: Schema = { a: z.number(), b: z.string() };
 ### `RouteParams`
 
 `RouteParams` is equal to `Partial<Record<string, string>>`. It is the same format that `RequestEvent.params` is.
+
+### `SafeParseFailure`
+
+`SafeParseFailure` has the shape
+
+```typescript
+{
+    success: false;
+    errors: { [key: string] : string[] };
+    response: ActionFailure<{ errors: [key: string] : string[] }>;
+}
+```
+
+The `response` property can be used to return errors from a form action.
+
+```typescript
+import { z } from 'zod';
+import { zk } from 'zodkit';
+import type { Actions } from './$types';
+
+export const actions = {
+    default: async (event) => {
+        const result = await zk.parseFormDataSafe(event, {
+            name: z.string().min(5);
+        });
+
+        if (!result.success) {
+            return result.response
+        }
+    }
+} satisfies Actions;
+```

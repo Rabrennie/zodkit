@@ -1,4 +1,4 @@
-import { fail, type RequestEvent } from '@sveltejs/kit';
+import { error, fail, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import {
     z,
     ZodType,
@@ -6,6 +6,8 @@ import {
     type ZodTypeAny,
     type SafeParseReturnType,
     ZodObject,
+    type typeToFlattenedError,
+    type SafeParseSuccess,
 } from 'zod';
 
 const getSearchParams = (data: URLSearchParams | RequestEvent) => {
@@ -32,30 +34,57 @@ const getFormData = async (data: FormData | RequestEvent) => {
 };
 
 type RouteParams = Partial<Record<string, string>>;
+
 type Schema = ZodTypeAny | ZodRawShape;
+
 type ParsedData<T extends Schema> = T extends ZodTypeAny
     ? z.output<T>
     : T extends ZodRawShape
     ? z.output<ZodObject<T>>
     : never;
-type SafeParseData<T extends Schema> = T extends ZodTypeAny
-    ? SafeParseReturnType<z.infer<T>, ParsedData<T>>
+
+type SchemaInput<T extends Schema> = T extends ZodTypeAny
+    ? z.infer<T>
     : T extends ZodRawShape
-    ? SafeParseReturnType<ZodObject<T>, ParsedData<T>>
+    ? ZodObject<T>
     : never;
+
+export type SafeParseFailure<T extends Schema> = {
+    success: false;
+    errors: typeToFlattenedError<SchemaInput<T>>['fieldErrors'];
+    response: ActionFailure<{ errors: typeToFlattenedError<SchemaInput<T>>['fieldErrors'] }>;
+};
+
+type SafeParseData<T extends Schema> = SafeParseSuccess<ParsedData<T>> | SafeParseFailure<T>;
 
 export function getSchema<T extends Schema>(schema: T) {
     return schema instanceof ZodType ? schema : (z.object(schema) as ZodTypeAny);
 }
 
 export function parseSafe<T extends Schema>(data: unknown, schema: T): SafeParseData<T> {
-    return getSchema(schema).safeParse(data) as SafeParseData<T>;
+    const result = getSchema(schema).safeParse(data) as SafeParseReturnType<
+        SchemaInput<T>,
+        ParsedData<T>
+    >;
+
+    if (!result.success) {
+        return {
+            success: false,
+            errors: result.error.flatten().fieldErrors,
+            response: fail(400, {
+                errors: result.error.flatten().fieldErrors,
+            }),
+        } as SafeParseFailure<T>;
+    }
+
+    return result as SafeParseSuccess<ParsedData<T>>;
 }
 
 export function parse<T extends Schema>(data: unknown, schema: T) {
-    const result = parseSafe(data, schema);
+    const result = getSchema(schema).safeParse(data);
     if (!result.success) {
-        throw fail(400, {
+        throw error(400, {
+            message: 'Parsing Failed',
             errors: result.error.flatten().fieldErrors,
         });
     }

@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { describe, it, expect } from 'vitest';
-import { z, type SafeParseError } from 'zod';
+import { z } from 'zod';
 import { mock, mockDeep } from 'vitest-mock-extended';
 
 import {
@@ -10,6 +10,7 @@ import {
     parseRouteParamsSafe,
     parseSearchParams,
     parseSearchParamsSafe,
+    type SafeParseFailure,
 } from '$lib/parsers.js';
 
 describe('parseSearchParamsSafe', () => {
@@ -44,10 +45,10 @@ describe('parseSearchParamsSafe', () => {
         const searchParams = new URLSearchParams('?a=test&b=test');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseSearchParamsSafe(searchParams, schema) as SafeParseError<any>;
+        const result = parseSearchParamsSafe(searchParams, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid search params using a schema', () => {
@@ -55,10 +56,10 @@ describe('parseSearchParamsSafe', () => {
         const searchParams = new URLSearchParams('?a=test&b=test');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseSearchParamsSafe(searchParams, schema) as SafeParseError<any>;
+        const result = parseSearchParamsSafe(searchParams, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('parses RequestEvent using an object', () => {
@@ -95,10 +96,10 @@ describe('parseSearchParamsSafe', () => {
         requestEvent.url = new URL('http://example.com/?a=test&b=test');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseSearchParamsSafe(requestEvent, schema) as SafeParseError<any>;
+        const result = parseSearchParamsSafe(requestEvent, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid RequestEvent using a schema', () => {
@@ -107,10 +108,10 @@ describe('parseSearchParamsSafe', () => {
         requestEvent.url = new URL('http://example.com/?a=test&b=test');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseSearchParamsSafe(requestEvent, schema) as SafeParseError<any>;
+        const result = parseSearchParamsSafe(requestEvent, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 });
 
@@ -141,7 +142,12 @@ describe('parseSearchParams', () => {
 
         expect(() => parseSearchParams(searchParams, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -153,7 +159,12 @@ describe('parseSearchParams', () => {
 
         expect(() => parseSearchParams(searchParams, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -188,7 +199,12 @@ describe('parseSearchParams', () => {
 
         expect(() => parseSearchParams(requestEvent, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -201,7 +217,12 @@ describe('parseSearchParams', () => {
 
         expect(() => parseSearchParams(requestEvent, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -248,10 +269,10 @@ describe('parseFormDataSafe', () => {
         const formData = invalidFormData;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (await parseFormDataSafe(formData, schema)) as SafeParseError<any>;
+        const result = (await parseFormDataSafe(formData, schema)) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid form data using a schema', async () => {
@@ -259,10 +280,10 @@ describe('parseFormDataSafe', () => {
         const formData = invalidFormData;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (await parseFormDataSafe(formData, schema)) as SafeParseError<any>;
+        const result = (await parseFormDataSafe(formData, schema)) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('parses RequestEvent using an object', async () => {
@@ -299,10 +320,10 @@ describe('parseFormDataSafe', () => {
         requestEvent.request.formData.mockResolvedValue(invalidFormData);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (await parseFormDataSafe(requestEvent, schema)) as SafeParseError<any>;
+        const result = (await parseFormDataSafe(requestEvent, schema)) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid RequestEvent using a schema', async () => {
@@ -311,10 +332,10 @@ describe('parseFormDataSafe', () => {
         requestEvent.request.formData.mockResolvedValue(invalidFormData);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (await parseFormDataSafe(requestEvent, schema)) as SafeParseError<any>;
+        const result = (await parseFormDataSafe(requestEvent, schema)) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 });
 
@@ -353,7 +374,12 @@ describe('parseFormData', () => {
 
         await expect(() => parseFormData(formData, schema)).rejects.toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -365,7 +391,12 @@ describe('parseFormData', () => {
 
         await expect(parseFormData(formData, schema)).rejects.toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -400,7 +431,12 @@ describe('parseFormData', () => {
 
         await expect(parseFormData(requestEvent, schema)).rejects.toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -413,7 +449,12 @@ describe('parseFormData', () => {
 
         await expect(parseFormData(requestEvent, schema)).rejects.toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -452,10 +493,10 @@ describe('parseRouteParamsSafe', () => {
         const routeParams = { a: 'test', b: 'test' };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseRouteParamsSafe(routeParams, schema) as SafeParseError<any>;
+        const result = parseRouteParamsSafe(routeParams, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid route params using a schema', () => {
@@ -463,10 +504,10 @@ describe('parseRouteParamsSafe', () => {
         const routeParams = { a: 'test', b: 'test' };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseRouteParamsSafe(routeParams, schema) as SafeParseError<any>;
+        const result = parseRouteParamsSafe(routeParams, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('parses RequestEvent using an object', () => {
@@ -503,10 +544,10 @@ describe('parseRouteParamsSafe', () => {
         requestEvent.params = { a: 'test', b: 'test' };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseRouteParamsSafe(requestEvent, schema) as SafeParseError<any>;
+        const result = parseRouteParamsSafe(requestEvent, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 
     it('returns error for invalid RequestEvent using a schema', () => {
@@ -515,10 +556,10 @@ describe('parseRouteParamsSafe', () => {
         requestEvent.params = { a: 'test', b: 'test' };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = parseRouteParamsSafe(requestEvent, schema) as SafeParseError<any>;
+        const result = parseRouteParamsSafe(requestEvent, schema) as SafeParseFailure<any>;
         expect(result.success).toBe(false);
-        expect(result.error.issues.length).toBe(1);
-        expect(result.error.issues[0].path[0]).toBe('a');
+        expect(result.errors).toHaveProperty('a');
+        expect(result.response.data.errors).toHaveProperty('a');
     });
 });
 
@@ -549,7 +590,12 @@ describe('parseRouteParams', () => {
 
         expect(() => parseRouteParams(routeParams, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -561,7 +607,12 @@ describe('parseRouteParams', () => {
 
         expect(() => parseRouteParams(routeParams, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -596,7 +647,12 @@ describe('parseRouteParams', () => {
 
         expect(() => parseRouteParams(requestEvent, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
@@ -609,7 +665,12 @@ describe('parseRouteParams', () => {
 
         expect(() => parseRouteParams(requestEvent, schema)).toThrow(
             expect.objectContaining({
-                data: { errors: { a: ['Expected number, received nan'] } },
+                body: {
+                    errors: {
+                        a: ['Expected number, received nan'],
+                    },
+                    message: 'Parsing Failed',
+                },
                 status: 400,
             }),
         );
