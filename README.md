@@ -93,7 +93,7 @@ export const GET = ((event) => {
     const result = zk.parseSearchParamsSafe(event, { myNumber: z.number({ coerce: true }) });
 
     if (!result.success) {
-        throw fail(400, {
+        return fail(400, {
             errors: result.error.flatten().fieldErrors,
         });
     }
@@ -135,7 +135,7 @@ export const POST = (async (event) => {
     const result = await zk.parseFormDataSafe(event, { myNumber: z.number({ coerce: true }) });
 
     if (!result.success) {
-        throw fail(400, {
+        return fail(400, {
             errors: result.error.flatten().fieldErrors,
         });
     }
@@ -177,7 +177,7 @@ export const GET = ((event) => {
     const result = zk.parseRouteParamsSafe(event, { myNumber: z.number({ coerce: true }) });
 
     if (!result.success) {
-        throw fail(400, {
+        return fail(400, {
             errors: result.error.flatten().fieldErrors,
         });
     }
